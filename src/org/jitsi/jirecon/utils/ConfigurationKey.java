@@ -46,6 +46,11 @@ public class ConfigurationKey
      * jirecon user. If not provided then anonymous login method is used.
      */
     public final static String XMPP_PASS_KEY = PREFIX + ".XMPP_PASS";
+    
+    /**
+     * The directory name indicates where to stage recording files.
+     */
+    public final static String STAGING_DIR_KEY = PREFIX + ".STAGING_DIR";
 
     /**
      * The directory name indicates where to output recording files.

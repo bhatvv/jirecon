@@ -5,11 +5,14 @@
  */
 package org.jitsi.jirecon;
 
+import java.io.File;
+import java.io.IOException;
 import java.text.*;
 import java.util.*;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
+
 import org.jitsi.jirecon.TaskManagerEvent.*;
 import org.jitsi.jirecon.protocol.extension.*;
 import org.jitsi.jirecon.utils.*;
@@ -54,8 +57,13 @@ public class TaskManager
     private final Map<String, Task> tasks = new HashMap<String, Task>();
 
     /**
-     * The base directory to save recording files. <tt>JireconImpl</tt> will
-     * save each recording in its own subdirectory of the base directory.
+     * The base directory to stage recording files. <tt>JireconImpl</tt> will
+     * stage each recording in its own subdirectory of the base directory.
+     */
+    private String baseStagingDir;
+    
+    /**
+     * The base output directory to save the output file after staging is completed.
      */
     private String baseOutputDir;
     
@@ -100,20 +108,29 @@ public class TaskManager
                 "true");
         final ConfigurationService cfg = LibJitsi.getConfigurationService();
         
-        baseOutputDir =
-            cfg.getString(ConfigurationKey.SAVING_DIR_KEY);
-        if (StringUtils.isNullOrEmpty(baseOutputDir))
-        {
-            throw new Exception("Failed to initialize Jirecon: output "+
-                                        "directory not set.");
-        }
+		baseStagingDir = cfg.getString(ConfigurationKey.STAGING_DIR_KEY);
+		if (StringUtils.isNullOrEmpty(baseStagingDir)) {
+			throw new Exception("Failed to initialize Jirecon: staging "
+					+ "directory not set.");
+		}
 
-        // Remove the suffix '/'
-        if (baseOutputDir.endsWith("/"))
-        {
-            baseOutputDir =
-                baseOutputDir.substring(0, baseOutputDir.length() - 1);
-        }
+		// Remove the suffix '/'
+		if (baseStagingDir.endsWith("/")) {
+			baseStagingDir = baseStagingDir.substring(0,
+					baseStagingDir.length() - 1);
+		}
+
+		baseOutputDir = cfg.getString(ConfigurationKey.SAVING_DIR_KEY);
+		if (StringUtils.isNullOrEmpty(baseOutputDir)) {
+			throw new Exception("Failed to initialize Jirecon: output "
+					+ "directory not set.");
+		}
+
+		// Remove the suffix '/'
+		if (baseOutputDir.endsWith("/")) {
+			baseOutputDir = baseOutputDir.substring(0,
+					baseOutputDir.length() - 1);
+		}
 
         final String xmppHost = cfg.getString(ConfigurationKey.XMPP_HOST_KEY);
         final int xmppPort = cfg.getInt(ConfigurationKey.XMPP_PORT_KEY, -1);
@@ -194,7 +211,7 @@ public class TaskManager
         }
 
         String outputDir =
-            baseOutputDir + "/" + mucJid
+            baseStagingDir + "/" + mucJid
                 + new SimpleDateFormat("-yyMMdd-HHmmss").format(new Date());
 
         task.addEventListener(this);
@@ -231,9 +248,37 @@ public class TaskManager
         {
             task.stop();
             task.uninit(keepData);
+            moveOutput(baseStagingDir, baseOutputDir);
         }
         return true;
     }
+    
+	public void moveOutput(String stagingPath, String outputPath) {
+		File stagingFolder = new File(stagingPath);
+		File outputFolder = new File(outputPath);
+
+		// make sure source exists
+		if (!stagingFolder.exists()) {
+
+			logger.error("Directory does not exist.");
+			return;
+		} else {
+
+			try {
+				// Copying media from staging to output folder.
+				MoveOutput.copyFolder(stagingFolder, outputFolder);
+				
+				// Removing contents of staging folder after copy.
+				MoveOutput.delete(stagingFolder);
+				
+			} catch (IOException e) {
+				e.printStackTrace();
+				return;
+			}
+		}
+
+		logger.info("Done moving media from staging to output");
+	}
 
     /**
      * Creates {@link #connection} and connects to the XMPP server.
