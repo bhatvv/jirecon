@@ -8,31 +8,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public class MoveOutput {
-	public static void main(String[] args) {
-		File srcFolder = new File("c:\\mkyong");
-		File destFolder = new File("c:\\mkyong-new");
-
-		// make sure source exists
-		if (!srcFolder.exists()) {
-
-			System.out.println("Directory does not exist.");
-			// just exit
-			System.exit(0);
-
-		} else {
-
-			try {
-				copyFolder(srcFolder, destFolder);
-			} catch (IOException e) {
-				e.printStackTrace();
-				// error, just exit
-				System.exit(0);
-			}
-		}
-
-		System.out.println("Done");
-	}
-
 	public static void copyFolder(File src, File dest) throws IOException {
 
 		if (src.isDirectory()) {
