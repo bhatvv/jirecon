@@ -26,6 +26,7 @@ public class MoveOutput {
 				// construct the src and dest file structure
 				File srcFile = new File(src, file);
 				File destFile = new File(dest, file);
+
 				// recursive copy
 				copyFolder(srcFile, destFile);
 			}

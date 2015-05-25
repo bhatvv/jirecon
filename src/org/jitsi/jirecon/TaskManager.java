@@ -1,6 +1,6 @@
 /*
  * Jirecon, the Jitsi recorder container.
- * 
+ *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
 package org.jitsi.jirecon;
@@ -37,7 +37,7 @@ public class TaskManager
      * instances to print debug information.
      */
     private static final Logger logger = Logger.getLogger(TaskManager.class);
-    
+
     /**
      * List of <tt>EventListener</tt>.
      */
@@ -61,12 +61,12 @@ public class TaskManager
      * stage each recording in its own subdirectory of the base directory.
      */
     private String baseStagingDir;
-    
+
     /**
      * The base output directory to save the output file after staging is completed.
      */
     private String baseOutputDir;
-    
+
     /**
      * Indicates whether <tt>JireconImpl</tt> has been initialized.
      */
@@ -77,13 +77,13 @@ public class TaskManager
      * <p>
      * Once this method has been executed successfully, <tt>Jirecon</tt> should
      * be ready to start working.
-     * 
+     *
      * Start Libjitsi, load configuration file and create connection with XMPP
      * server.
-     * 
+     *
      * @param configurationPath is the configuration file path.
      * @throws Exception if failed to initialize Jirecon.
-     * 
+     *
      */
     synchronized public void init(String configurationPath)
         throws Exception
@@ -107,7 +107,7 @@ public class TaskManager
                 ConfigurationService.PNAME_CONFIGURATION_FILE_IS_READ_ONLY,
                 "true");
         final ConfigurationService cfg = LibJitsi.getConfigurationService();
-        
+
 		baseStagingDir = cfg.getString(ConfigurationKey.STAGING_DIR_KEY);
 		if (StringUtils.isNullOrEmpty(baseStagingDir)) {
 			throw new Exception("Failed to initialize Jirecon: staging "
@@ -147,7 +147,7 @@ public class TaskManager
             uninit();
             throw e;
         }
-        
+
         isInitialized = true;
     }
 
@@ -157,9 +157,9 @@ public class TaskManager
      * <strong>Warning:</tt> If there are any residue <tt>JireconTask</tt>s,
      * </tt>Jirecon</tt> will stop them and notify <tt>JireconEventListener</tt>
      * s.
-     * 
+     *
      * Stop Libjitsi and close connection with XMPP server.
-     * 
+     *
      */
     synchronized public void uninit()
     {
@@ -189,7 +189,7 @@ public class TaskManager
      * Note that a return value of <tt>false</tt> means that the task has
      * failed to start, while a return value of <tt>true</tt> does not guarantee
      * success.
-     * 
+     *
      * @param mucJid indicates the Jitsi Meet conference to record.
      * @return <tt>true</tt> if the task was initiated asynchronously (and its
      * success is unknown), or <tt>false</tt> if the task failed to be initiated.
@@ -223,7 +223,7 @@ public class TaskManager
 
     /**
      * Stops a recording task for a specified Jitsi Meet conference.
-     * 
+     *
      * @param mucJid the MUC JID of the Jitsi Meet conference to stop.
      * @param keepData Whether to keep the output files or delete them.
      * @return <tt>true</tt> if the task was stopped successfully and
@@ -232,13 +232,13 @@ public class TaskManager
     public boolean stopJireconTask(String mucJid, boolean keepData)
     {
         logger.info("Stopping task: " + mucJid);
-        
+
         Task task;
         synchronized (tasks)
         {
             task = tasks.remove(mucJid);
         }
-        
+
         if (task == null)
         {
             logger.info("Failed to stop non-existent task: " + mucJid);
@@ -248,41 +248,14 @@ public class TaskManager
         {
             task.stop();
             task.uninit(keepData);
-            moveOutput(baseStagingDir, baseOutputDir);
+            // moveOutput(baseStagingDir, baseOutputDir);
         }
         return true;
     }
-    
-	public void moveOutput(String stagingPath, String outputPath) {
-		File stagingFolder = new File(stagingPath);
-		File outputFolder = new File(outputPath);
-
-		// make sure source exists
-		if (!stagingFolder.exists()) {
-
-			logger.error("Directory does not exist.");
-			return;
-		} else {
-
-			try {
-				// Copying media from staging to output folder.
-				MoveOutput.copyFolder(stagingFolder, outputFolder);
-				
-				// Removing contents of staging folder after copy.
-				MoveOutput.delete(stagingFolder);
-				
-			} catch (IOException e) {
-				e.printStackTrace();
-				return;
-			}
-		}
-
-		logger.info("Done moving media from staging to output");
-	}
 
     /**
      * Creates {@link #connection} and connects to the XMPP server.
-     * 
+     *
      * @param xmppHost is the host name of XMPP server.
      * @param xmppPort is the port of XMPP server.
      * @param xmppUser the XMPP username to use (should NOT include the domain).
@@ -412,6 +385,7 @@ public class TaskManager
             logger.info("Recording task of MUC: " + mucJid
                 + " finished successfully.");
             fireEvent(evt);
+            moveOutput(baseStagingDir,baseOutputDir, mucJid);
             break;
         case TASK_STARTED:
             logger.info("Recording task of MUC " + mucJid + " started.");
@@ -425,7 +399,7 @@ public class TaskManager
     /**
      * Notifies the registered <tt>JireconEventListener</tt> of a
      * <tt>TaskManagerEvent</tt>.
-     * 
+     *
      * @param evt the event to send.
      */
     private void fireEvent(TaskManagerEvent evt)
@@ -434,5 +408,55 @@ public class TaskManager
         {
             l.handleEvent(evt);
         }
+    }
+
+    public void moveOutput(String stagingPath, String outputPath, String mucJid) {
+	File stagingFolder = new File(stagingPath);
+	File outputFolder = new File(outputPath);
+
+	// make sure source exists
+	if (!stagingFolder.exists()) {
+
+		logger.error("Directory does not exist.");
+		return;
+	} else {
+
+		try {
+
+			String files[] = stagingFolder.list();
+
+			for (String file : files) {
+				if (file.matches(mucJid + ".*")) {
+					// File mucFolder = new File(file);
+					File srcFile = new File(stagingFolder, file);
+					File destFile = new File(outputFolder, file);
+					if (!outputFolder.exists()) {
+						outputFolder.mkdir();
+					}
+					destFile.mkdir();
+
+					// Copying media from staging to output folder.
+					MoveOutput.copyFolder(srcFile, destFile);
+
+					// Removing contents of staging folder after copy.
+					MoveOutput.delete(srcFile);
+				}
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			return;
+		}
+	}
+
+	logger.info("Done moving media from staging to output");
+    }
+
+    public String getBaseStagingDir() {
+	return baseStagingDir;
+    }
+
+    public String getBaseOutputDir() {
+	return baseOutputDir;
     }
 }
