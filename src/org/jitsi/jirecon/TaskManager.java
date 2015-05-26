@@ -427,24 +427,22 @@ public class TaskManager
 
 			for (String file : files) {
 				if (file.matches(mucJid + ".*")) {
-					// File mucFolder = new File(file);
-					File srcFile = new File(stagingFolder, file);
-					File destFile = new File(outputFolder, file);
 					if (!outputFolder.exists()) {
 						outputFolder.mkdir();
 					}
-					destFile.mkdir();
 
-					// Copying media from staging to output folder.
-					MoveOutput.copyFolder(srcFile, destFile);
+					String command = "mv " + getBaseStagingDir() + "/" + file + " " + getBaseOutputDir();
 
-					// Removing contents of staging folder after copy.
-					MoveOutput.delete(srcFile);
+					Process p = Runtime.getRuntime().exec(command);
+					p.waitFor();
 				}
 			}
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			return;
+		} catch (InterruptedException intException) {
+			intException.printStackTrace();
 			return;
 		}
 	}
