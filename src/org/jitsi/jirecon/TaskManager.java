@@ -6,6 +6,7 @@
 package org.jitsi.jirecon;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.*;
 import java.util.*;
@@ -13,6 +14,7 @@ import java.util.*;
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
+import org.jitsi.impl.neomedia.recording.RecorderEventHandlerJSONImpl;
 import org.jitsi.jirecon.TaskManagerEvent.*;
 import org.jitsi.jirecon.protocol.extension.*;
 import org.jitsi.jirecon.utils.*;
@@ -22,6 +24,9 @@ import org.jitsi.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.provider.*;
 import org.jivesoftware.smackx.*;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 
 /**
  * The manager of <tt>Task</tt>s. Each <tt>Task</tt> represents a
@@ -66,6 +71,12 @@ public class TaskManager
      * The base output directory to save the output file after staging is completed.
      */
     private String baseOutputDir;
+    
+    private static String finalOutputDir;
+
+	public static String getFinalOutputDir() {
+		return finalOutputDir;
+	}
 
     /**
      * Indicates whether <tt>JireconImpl</tt> has been initialized.
@@ -214,6 +225,8 @@ public class TaskManager
             baseStagingDir + "/" + mucJid
                 + new SimpleDateFormat("-yyMMdd-HHmmss").format(new Date());
 
+		finalOutputDir = outputDir;
+
         task.addEventListener(this);
         task.init(mucJid, connection, outputDir);
 
@@ -249,9 +262,50 @@ public class TaskManager
             task.stop();
             task.uninit(keepData);
             // moveOutput(baseStagingDir, baseOutputDir);
+            createEndpointMappingJson();
         }
         return true;
     }
+    
+    
+    @SuppressWarnings("unchecked")
+	public void createEndpointMappingJson() {
+		HashMap<String, String> hm = new HashMap<String, String>();
+		hm = RecorderEventHandlerJSONImpl.getEndpointMapping();
+		String outDir = getFinalOutputDir();
+		 
+
+		JSONArray endpoints = new JSONArray();
+		for (String string : hm.keySet()) {
+			JSONObject obj = new JSONObject();
+			obj.put("id", string);
+			logger.info("\n " + string);
+			logger.info(hm.get(string));
+			obj.put("displayName", hm.get(string));
+			endpoints.add(obj);
+
+		}
+
+		RecorderEventHandlerJSONImpl.getEndpointMapping().clear();
+
+		try {
+			FileWriter file = new FileWriter(outDir + "/endpoints.json");
+
+			logger.info(file);
+
+			file.write(endpoints.toJSONString());
+			logger.info("endpoints.json created");
+			file.flush();
+			file.close();
+			endpoints.clear();
+		} catch (IOException i) {
+			i.printStackTrace();
+		}
+
+	}
+
+    
+    
 
     /**
      * Creates {@link #connection} and connects to the XMPP server.
