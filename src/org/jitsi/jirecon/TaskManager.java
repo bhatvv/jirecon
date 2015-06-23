@@ -262,7 +262,7 @@ public class TaskManager
             task.stop();
             task.uninit(keepData);
             // moveOutput(baseStagingDir, baseOutputDir);
-            createEndpointMappingJson();
+            // createEndpointMappingJson();
         }
         return true;
     }
@@ -439,6 +439,7 @@ public class TaskManager
             logger.info("Recording task of MUC: " + mucJid
                 + " finished successfully.");
             fireEvent(evt);
+            createEndpointMappingJson();
             moveOutput(baseStagingDir,baseOutputDir, mucJid);
             break;
         case TASK_STARTED:
