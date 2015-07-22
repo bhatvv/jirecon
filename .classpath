@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/bccontrib-1.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/bcpkix-jdk15on-151.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/bcprov-jdk15on-151.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/concurrentlinkedhashmap-lru.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/dom4j.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/fmj.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/ice4j.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/jitsi-lgpl-dependencies.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/json-simple-1.1.1.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/junit.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/libidn.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/libjitsi.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/protocol-jabber.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/slf4j-api.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/smack.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/smackx.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/tinder.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/util.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/whack.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/xpp3.jar"/>
+	<classpathentry kind="lib" path="/home/swapnil/Downloads/bhatvv/jirecon/lib/zrtp4j-light.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

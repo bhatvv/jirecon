@@ -1,7 +1,21 @@
 /*
- * Jirecon, the Jitsi recorder container.
- * 
- * Distributable under LGPL license. See terms of license at gnu.org.
+/*
+ * Jirecon, the JItsi REcording COntainer.
+ *
+ *
+ * Copyright @ 2015 Atlassian Pty Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.jitsi.jirecon;
 
@@ -10,10 +24,14 @@ import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
 
+import net.java.sip.communicator.util.Logger;
+
 import org.jitsi.impl.neomedia.recording.*;
 import org.jitsi.impl.neomedia.rtp.translator.*;
 import org.jitsi.jirecon.TaskEvent.*;
 import org.jitsi.jirecon.datachannel.*;
+import org.jitsi.jirecon.xmppcomponent.ComponentLauncher;
+import org.jitsi.jirecon.xmppcomponent.XMPPComponent;
 import org.jitsi.service.libjitsi.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.format.*;
@@ -34,9 +52,7 @@ public class StreamRecorderManager
     /**
      * The <tt>Logger</tt>, used to log messages to standard output.
      */
-    private static final Logger logger = Logger
-        .getLogger(StreamRecorderManager.class);
-
+    private static final Logger logger = Logger.getLogger("StreamRecorderManager.class");
     /**
      * The map between <tt>MediaType</tt> and <tt>MediaStream</tt>. Those are
      * used to receiving media streams.
@@ -132,6 +148,7 @@ public class StreamRecorderManager
          * NOTE: DtlsControl will be managed by MediaStream. So we don't need to
          * open/close DtlsControl additionally.
          */
+        
         createMediaStreams(dtlsControls);
         createDataChannel(dtlsControls.get(MediaType.DATA));
 
@@ -198,6 +215,22 @@ public class StreamRecorderManager
         stopRecordingStreams();
         stopReceivingStreams();
         closeDataChannel();
+
+        // Create an empty ".recording_finished" file in the output directory in
+        // order to mark the directory as containing a finished recording.
+        File recordingFinished
+                = new File(outputDir + File.pathSeparator + ".recording_finished");
+        try
+        {
+            if (!recordingFinished.createNewFile())
+                logger.warn(".recording_finished already exists");
+        }
+        catch (IOException ioe)
+        {
+            logger.warn("Failed to create .recording_finished: " + ioe);
+        }
+
+        /*
         /*
          * NOTE: We don't need to stop translators because those media streams
          * will do it.
@@ -635,8 +668,19 @@ public class StreamRecorderManager
                         Synchronizer synchronizer = recorder.getSynchronizer();
                         synchronizer.setEndpoint(ssrc.getValue(), endpointId);
                     }
-                    logger.info("endpoint: " + endpointId + " " + ssrc.getKey()
+                    
+                   /* logger.info("endpoint: " + endpointId + " " + ssrc.getKey()
                         + " " + ssrc.getValue());
+                    */
+                    
+                    
+                    logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+                			+XMPPComponent.getRoomName()+ ", RoutingID :" +endpointId +", Message:"+
+                			"endpoint: " + endpointId + " " + ssrc.getKey()
+                            + " " + ssrc.getValue());
+                    
+                    
+                    
                 }
             }
         }
@@ -734,7 +778,7 @@ public class StreamRecorderManager
              * If there is an existed file with "filename", add suffix to
              * "filename". For instance, from "metadata.json" to
              * "metadata.json-1".
-             */
+             */ 
             int count = 1;
             String filenameAvailable = filename;
             File file = null;

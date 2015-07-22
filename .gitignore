@@ -3,3 +3,4 @@ output
 *.swp
 classes
 jirecon.jar
+/bin/

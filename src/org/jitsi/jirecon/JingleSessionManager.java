@@ -1,7 +1,21 @@
 /*
- * Jirecon, the Jitsi recorder container.
- * 
- * Distributable under LGPL license. See terms of license at gnu.org.
+/*
+ * Jirecon, the JItsi REcording COntainer.
+ *
+ *
+ * Copyright @ 2015 Atlassian Pty Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.jitsi.jirecon;
 
@@ -15,6 +29,8 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.jirecon.TaskEvent.*;
 import org.jitsi.jirecon.protocol.extension.*;
+import org.jitsi.jirecon.xmppcomponent.ComponentLauncher;
+import org.jitsi.jirecon.xmppcomponent.XMPPComponent;
 import org.jitsi.service.libjitsi.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.format.*;
@@ -37,8 +53,7 @@ public class JingleSessionManager
     /**
      * The <tt>Logger</tt>, used to log messages to standard output.
      */
-    private static final Logger logger = Logger
-        .getLogger(JingleSessionManager.class.getName());
+    private static final Logger logger = Logger.getLogger("JingleSessionManager.class");
     
     /**
      * Maximum wait time in milliseconds.
@@ -78,6 +93,9 @@ public class JingleSessionManager
      * Remote node's full-jid which is used for creating <tt>JingleIQ</tt>.
      */
     private String remoteFullJid;
+    
+    
+   
 
     /**
      * Jingle session id which is used for making <tt>JingleIq</tt>.
@@ -192,7 +210,13 @@ public class JingleSessionManager
             }
         }
 
-        logger.info("Joined MUC as " + mucJid + "/" + finalNickname);
+  
+        //logger.info("Joined MUC as " + mucJid + "/" + finalNickname);
+        
+        logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+    			+XMPPComponent.getRoomName() + ", RoutingID :" +XMPPComponent.getRoutingId() +", Message:"+
+    			"Joined MUC as " + mucJid + "/" + finalNickname);
+        
         Packet presence = new Presence(Presence.Type.available);
         presence.setTo(mucJid);
         presence.addExtension(new Nick(NICKNAME));
@@ -205,9 +229,14 @@ public class JingleSessionManager
      */
     private void leaveMUC()
     {
-        logger.info("leaveMUC");
+        //logger.info("leaveMUC");
+    	
+        logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+    			+muc.getRoom() + ", RoutingID :" + NICKNAME +", Message:"+
+    			"leaveMUC");
+    	
 
-        if (null != muc)
+        if (null != muc) 
             muc.leave();
     }
 

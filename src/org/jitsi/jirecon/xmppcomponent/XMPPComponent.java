@@ -1,14 +1,37 @@
 /*
- * Jirecon, the Jitsi recorder container.
- * 
- * Distributable under LGPL license. See terms of license at gnu.org.
+/*
+ * Jirecon, the JItsi REcording COntainer.
+ *
+ *
+ * Copyright @ 2015 Atlassian Pty Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.jitsi.jirecon.xmppcomponent;
 
+import java.io.StringReader;
 import java.util.*;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.jitsi.jirecon.*;
 import org.jitsi.jirecon.TaskManagerEvent.*;
 import org.jitsi.util.*;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.xmpp.component.*;
 import org.xmpp.packet.*;
 
@@ -152,8 +175,23 @@ public class XMPPComponent
      * Name of component.
      */
     private final String name = "Jirecon component";
+    
+    
+    private static String routingId;
+    
 
-    /**
+    public static String getRoutingId() {
+		return routingId;
+	}
+
+    private static String roomName;
+    
+
+    public static String getRoomName() {
+		return roomName;
+	}
+
+	/**
      * Description of component.
      */
     private final String description = "Jirecon component.";
@@ -262,6 +300,13 @@ public class XMPPComponent
     protected IQ handleIQSet(IQ iq) throws Exception
     {
         logger.info("RECV IQ SET: " + iq.toXML());
+        
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        org.xml.sax.InputSource inputSource = new org.xml.sax.InputSource(new StringReader(iq.toXML()));
+        Document doc = builder.parse(inputSource);
+        
+        
 
         final String action =
             RecordingIqUtils.getAttribute(iq, RecordingIqUtils.ACTION_NAME);
@@ -270,7 +315,42 @@ public class XMPPComponent
         // Start recording
         if (0 == action.compareTo(RecordingIqUtils.Action.START.toString()))
         {
+            
+            
+            Element root = doc.getDocumentElement();
+           // logger.info("@@@@@"+root.getNodeName()+"@@@@@");
+            
+            if(root!=null)
+            {   
+		    	NamedNodeMap attributes = root.getAttributes();
+	           
+	           	int num = attributes.getLength();
+	           	String endpoint = null ;
+	            for (int i =0 ; i < attributes.getLength();i++)
+	                { 
+	                	Attr attr = (Attr) attributes.item(i);
+	            	    String attrName = attr.getNodeName();
+	       
+	            	    String attrValue = attr.getNodeValue();
+	        	 
+	            	    if(attr.getNodeName()=="from")
+	            	    {
+	            	    	endpoint =attr.getNodeValue();
+	            	    }
+	                 }
+	            
+	            routingId = endpoint.split("/")[1];
+	            
+	            //logger.info(routingId);
+	            
+	            
+	            roomName = RecordingIqUtils.getAttribute(iq, RecordingIqUtils.MUCJID_NAME);
+	                	
+	        }
+            
             result = startRecording(iq);
+            
+            
         }
         // Stop recording.
         else if (0 == action.compareTo(RecordingIqUtils.Action.STOP.toString()))
@@ -355,6 +435,9 @@ public class XMPPComponent
     {
         String mucJid =
             RecordingIqUtils.getAttribute(iq, RecordingIqUtils.MUCJID_NAME);
+        
+        
+        
 
         RecordingSession newSession = null;
 

@@ -1,0 +1,9 @@
+{
+  "audio" : [
+    {"rtpTimestamp":811881987,"filename":"247869367.mp3","endpointId":"e961b37b-7669-437c-8be6-8ee379513a0e@localhost\/3f81eed8-73e5-4442-8301-4d9ec5c26bc0","participant Name":null,"ssrc":247869367,"mediaType":"audio","type":"RECORDING_STARTED","instant":1437539916697}
+  ],
+
+  "video" : [
+    {"rtpTimestamp":1086877170,"filename":"1659689017.webm","endpointId":"e961b37b-7669-437c-8be6-8ee379513a0e@localhost\/3f81eed8-73e5-4442-8301-4d9ec5c26bc0","participant Name":null,"ssrc":1659689017,"mediaType":"video","aspectRatio":"16_9","type":"RECORDING_STARTED","instant":1437539916605}
+  ]
+}

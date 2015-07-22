@@ -1,7 +1,21 @@
 /*
- * Jirecon, the Jitsi recorder container.
+/*
+ * Jirecon, the JItsi REcording COntainer.
  *
- * Distributable under LGPL license. See terms of license at gnu.org.
+ *
+ * Copyright @ 2015 Atlassian Pty Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.jitsi.jirecon;
 
@@ -13,11 +27,14 @@ import java.util.*;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
+import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.impl.neomedia.recording.RecorderEventHandlerJSONImpl;
 import org.jitsi.jirecon.TaskManagerEvent.*;
 import org.jitsi.jirecon.protocol.extension.*;
 import org.jitsi.jirecon.utils.*;
+import org.jitsi.jirecon.xmppcomponent.ComponentLauncher;
+import org.jitsi.jirecon.xmppcomponent.XMPPComponent;
 import org.jitsi.service.configuration.*;
 import org.jitsi.service.libjitsi.*;
 import org.jitsi.util.*;
@@ -41,29 +58,29 @@ public class TaskManager
      * The <tt>Logger</tt> used by the <tt>TaskManager</tt> class and its
      * instances to print debug information.
      */
-    private static final Logger logger = Logger.getLogger(TaskManager.class);
-
+    private static final net.java.sip.communicator.util.Logger logger = Logger.getLogger(TaskManager.class);
     /**
-     * List of <tt>EventListener</tt>.
+     * List of <tt>EventListener</tt>, if something important happen,
+     * they will be notified.
      */
     private List<JireconEventListener> listeners =
         new ArrayList<JireconEventListener>();
 
     /**
-     * The <tt>XMPPConnection</tt> used by this <tt>TaskManager</tt> (shared
-     * between all <tt>JireconTask</tt>s).
+     * An instance of <tt>XMPPConnection</tt>, it is shared with every
+     * <tt>JireconTask</tt>
      */
     private XMPPConnection connection;
 
     /**
-     * Maps an ID of a Jitsi Meet conference (the JID of the MUC) to the
-     * <tt>JireconTask</tt> for the conference.
+     * Active <tt>JireconTask</tt>, map between Jitsi-meeting jid and task.
      */
-    private final Map<String, Task> tasks = new HashMap<String, Task>();
+    private final Map<String, Task> tasks =
+        new HashMap<String, Task>();
 
     /**
-     * The base directory to stage recording files. <tt>JireconImpl</tt> will
-     * stage each recording in its own subdirectory of the base directory.
+     * The base directory to save recording files. <tt>JireconImpl</tt> will add
+     * date suffix to it as a final output directory.
      */
     private String baseStagingDir;
 
@@ -79,7 +96,8 @@ public class TaskManager
 	}
 
     /**
-     * Indicates whether <tt>JireconImpl</tt> has been initialized.
+     * Indicates whether <tt>JireconImpl</tt> has been initialized, it is used
+     * to avoid double initialization.
      */
     private boolean isInitialized = false;
 
@@ -88,13 +106,13 @@ public class TaskManager
      * <p>
      * Once this method has been executed successfully, <tt>Jirecon</tt> should
      * be ready to start working.
-     *
+     * 
      * Start Libjitsi, load configuration file and create connection with XMPP
      * server.
-     *
+     * 
      * @param configurationPath is the configuration file path.
      * @throws Exception if failed to initialize Jirecon.
-     *
+     * 
      */
     synchronized public void init(String configurationPath)
         throws Exception
@@ -130,14 +148,14 @@ public class TaskManager
 			baseStagingDir = baseStagingDir.substring(0,
 					baseStagingDir.length() - 1);
 		}
-
+        // Remove the suffix '/' in SAVE_DIR
 		baseOutputDir = cfg.getString(ConfigurationKey.SAVING_DIR_KEY);
 		if (StringUtils.isNullOrEmpty(baseOutputDir)) {
 			throw new Exception("Failed to initialize Jirecon: output "
 					+ "directory not set.");
 		}
 
-		// Remove the suffix '/'
+
 		if (baseOutputDir.endsWith("/")) {
 			baseOutputDir = baseOutputDir.substring(0,
 					baseOutputDir.length() - 1);
@@ -165,12 +183,12 @@ public class TaskManager
     /**
      * Uninitialize <tt>Jirecon</tt>, prepare for GC.
      * <p>
-     * <strong>Warning:</tt> If there are any residue <tt>JireconTask</tt>s,
+     * <strong>Warning:</tt> If there is any residue <tt>JireconTask</tt>,
      * </tt>Jirecon</tt> will stop them and notify <tt>JireconEventListener</tt>
      * s.
-     *
+     * 
      * Stop Libjitsi and close connection with XMPP server.
-     *
+     * 
      */
     synchronized public void uninit()
     {
@@ -196,18 +214,19 @@ public class TaskManager
      * Create a new recording task for a specified Jitsi-meeting.
      * <p>
      * <strong>Warning:</strong> This method is asynchronous, it will return
-     * immediately regardless of whether the task has been started successfully.
-     * Note that a return value of <tt>false</tt> means that the task has
-     * failed to start, while a return value of <tt>true</tt> does not guarantee
-     * success.
-     *
-     * @param mucJid indicates the Jitsi Meet conference to record.
-     * @return <tt>true</tt> if the task was initiated asynchronously (and its
-     * success is unknown), or <tt>false</tt> if the task failed to be initiated.
+     * immediately while it doesn't mean the task has been started successfully.
+     * If the task failed, it will notify event listeners.
+     * 
+     * @param mucJid indicates which Jitsi-meeting you want to record.
+     * @return true if the task has been started successfully, otherwise false.
+     *         Notice that the task may fail during the execution.
      */
     public boolean startJireconTask(String mucJid)
     {
-        logger.info("Starting jirecon task: " + mucJid);
+        //logger.info("Starting jirecon task: " + mucJid);
+        
+        logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+    			+mucJid + ", RoutingID :" + XMPPComponent.getRoutingId() +", Message:"+"Starting jirecon task: " + mucJid);
 
         Task task;
         synchronized (tasks)
@@ -235,16 +254,20 @@ public class TaskManager
     }
 
     /**
-     * Stops a recording task for a specified Jitsi Meet conference.
-     *
-     * @param mucJid the MUC JID of the Jitsi Meet conference to stop.
-     * @param keepData Whether to keep the output files or delete them.
-     * @return <tt>true</tt> if the task was stopped successfully and
-     * <tt>false</tt> otherwise.
+     * Stop a recording task for a specified Jitsi-meeting.
+     * 
+     * @param mucJid indicates which Jitsi-meeting you want to record.
+     * @param keepData Whether keeping the data. Keep the output files if it is
+     *            true, otherwise remove them.
+     * @return true if the task has been stopped successfully, otherwise false,
+     *         such as task is not found.
      */
     public boolean stopJireconTask(String mucJid, boolean keepData)
     {
-        logger.info("Stopping task: " + mucJid);
+        //logger.info("Stopping task: " + mucJid);
+        
+        logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+    			+mucJid + ", RoutingID :" + XMPPComponent.getRoutingId() +", Message:"+"Stopping jirecon task: " + mucJid);
 
         Task task;
         synchronized (tasks)
@@ -261,8 +284,6 @@ public class TaskManager
         {
             task.stop();
             task.uninit(keepData);
-            // moveOutput(baseStagingDir, baseOutputDir);
-            // createEndpointMappingJson();
         }
         return true;
     }
@@ -279,8 +300,8 @@ public class TaskManager
 		for (String string : hm.keySet()) {
 			JSONObject obj = new JSONObject();
 			obj.put("id", string);
-			logger.info("\n " + string);
-			logger.info(hm.get(string));
+			//logger.info("\n " + string);
+			//logger.info(hm.get(string));
 			obj.put("displayName", hm.get(string));
 			endpoints.add(obj);
 
@@ -291,10 +312,10 @@ public class TaskManager
 		try {
 			FileWriter file = new FileWriter(outDir + "/endpoints.json");
 
-			logger.info(file);
+			//logger.info(file);
 
 			file.write(endpoints.toJSONString());
-			logger.info("endpoints.json created");
+			//logger.info("endpoints.json created");
 			file.flush();
 			file.close();
 			endpoints.clear();
@@ -352,30 +373,46 @@ public class TaskManager
         if (StringUtils.isNullOrEmpty(xmppUser)
             || StringUtils.isNullOrEmpty(xmppPass))
         {
-            logger.info("Logging in as XMPP client anonymously.");
+            //logger.info("Logging in as XMPP client anonymously.");
+            
+            logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+        			+XMPPComponent.getRoomName() + ", RoutingID :" + XMPPComponent.getRoutingId() +", Message:"+"Logging in as XMPP client anonymously.");
+            
+            
             connection.loginAnonymously();
         }
         else
         {
-            logger.info("Logging in as XMPP client using: host=" + xmppHost
+            /*logger.info("Logging in as XMPP client using: host=" + xmppHost
+                        + "; port=" + xmppPort + "; user=" + xmppUser);*/
+            
+            logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+        			+XMPPComponent.getRoomName() + ", RoutingID :" + XMPPComponent.getRoutingId() +", Message:"+"Logging in as XMPP client using: host=" + xmppHost
                         + "; port=" + xmppPort + "; user=" + xmppUser);
+            
             connection.login(xmppUser, xmppPass);
+            
+            
+            
         }
     }
 
     /**
-     * Closes the XMPP connection.
+     * Close XMPP connection.
      */
     private void closeConnection()
     {
-        logger.info("Closing the XMPP connection.");
+        /*logger.info("Closing the XMPP connection.");*/
+        
+        logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+    			+XMPPComponent.getRoomName() + ", RoutingID :" + XMPPComponent.getRoutingId() +", Message:"+"Closing the XMPP connection.");
+        
         if (connection != null && connection.isConnected())
             connection.disconnect();
     }
 
     /**
-     * Register our <tt>PacketExtensionProvider</tt>s with Smack's
-     * <tt>ProviderManager</tt>.
+     * Register the <tt>PacketExtensionProvider</tt>s.
      */
     private void initializePacketProviders()
     {
@@ -402,18 +439,32 @@ public class TaskManager
      */
     public void addEventListener(JireconEventListener listener)
     {
-        logger.info("Adding JireconEventListener: " + listener);
+        //logger.info("Adding JireconEventListener: " + listener);
+    	
+    	
+        logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+    			+XMPPComponent.getRoomName() + ", RoutingID :" + XMPPComponent.getRoutingId() +
+    			", Message:"+"Adding JireconEventListener: " + listener);
+        
         listeners.add(listener);
     }
 
     /**
-     * Removes a <tt>JireconEventListener</tt>.
-     *
-     * @param listener the <tt>JireconEventListener</tt> to remove.
+     * Remove an event listener.
+     * 
+     * @param listener is the event listener you want to remove.
      */
     public void removeEventListener(JireconEventListener listener)
     {
-        logger.info("Removing JireconEventListener: " + listener);
+    	
+    	 
+    	
+       // logger.info("Removing JireconEventListener: " + listener);
+    	
+    	logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+     			+XMPPComponent.getRoomName() + ", RoutingID :" + XMPPComponent.getRoutingId() +
+     			", Message:"+"Removing JireconEventListener: " + listener);
+    	
         listeners.remove(listener);
     }
 
@@ -431,19 +482,39 @@ public class TaskManager
         {
         case TASK_ABORTED:
             stopJireconTask(mucJid, false);
-            logger.info("Recording task of MUC " + mucJid + " failed.");
+            
+            
+           /* logger.info("Recording task of MUC " + mucJid + " failed.");*/
+            
+            logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+         			+XMPPComponent.getRoomName() + ", RoutingID :" + XMPPComponent.getRoutingId() +
+         			", Message:"+"Recording task of MUC " + mucJid + " failed.");
+            
             fireEvent(evt);
             break;
         case TASK_FINISED:
             stopJireconTask(mucJid, true);
-            logger.info("Recording task of MUC: " + mucJid
+            
+            
+           /* logger.info("Recording task of MUC: " + mucJid
+                + " finished successfully.");*/
+            
+            logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+         			+XMPPComponent.getRoomName() + ", RoutingID :" + XMPPComponent.getRoutingId() +
+         			", Message:"+"Recording task of MUC: " + mucJid
                 + " finished successfully.");
+            
             fireEvent(evt);
             createEndpointMappingJson();
             moveOutput(baseStagingDir,baseOutputDir, mucJid);
             break;
         case TASK_STARTED:
-            logger.info("Recording task of MUC " + mucJid + " started.");
+      /*      logger.info("Recording task of MUC " + mucJid + " started.");*/
+            
+            logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+         			+XMPPComponent.getRoomName() + ", RoutingID :" + XMPPComponent.getRoutingId() +
+         			", Message:"+"Recording task of MUC " + mucJid + " started.");
+            
             fireEvent(evt);
             break;
         default:
@@ -452,10 +523,9 @@ public class TaskManager
     }
 
     /**
-     * Notifies the registered <tt>JireconEventListener</tt> of a
-     * <tt>TaskManagerEvent</tt>.
-     *
-     * @param evt the event to send.
+     * Notify the listeners.
+     * 
+     * @param evt is the event that you want to send.
      */
     private void fireEvent(TaskManagerEvent evt)
     {
@@ -465,41 +535,42 @@ public class TaskManager
         }
     }
 
-    public void moveOutput(String stagingPath, String outputPath, String mucJid) {
-	File stagingFolder = new File(stagingPath);
-	File outputFolder = new File(outputPath);
-
-	// make sure source exists
-	if (!stagingFolder.exists()) {
-
-		logger.error("Directory does not exist.");
-		return;
-	} else {
-
-		try {
-
-			String files[] = stagingFolder.list();
-
-			for (String file : files) {
-				if (file.matches(mucJid + ".*")) {
-					if (!outputFolder.exists()) {
-						outputFolder.mkdir();
-					}
-
-					String command = "mv " + getBaseStagingDir() + "/" + file + " " + getBaseOutputDir();
-
-					Process p = Runtime.getRuntime().exec(command);
-					p.waitFor();
-				}
-			}
-
-		} catch (IOException e) {
-			e.printStackTrace();
-			return;
-		} catch (InterruptedException intException) {
-			intException.printStackTrace();
-			return;
-		}
+    public void moveOutput(String stagingPath, String outputPath, String mucJid) 
+    {
+	   File stagingFolder = new File(stagingPath);
+	   File outputFolder = new File(outputPath);
+  
+  	// make sure source exists
+  	if (!stagingFolder.exists()) {
+  
+  		logger.error("Directory does not exist.");
+  		return;
+  	} else {
+  
+  		try {
+  
+  			String files[] = stagingFolder.list();
+  
+  			for (String file : files) {
+  				if (file.matches(mucJid + ".*")) {
+  					if (!outputFolder.exists()) {
+  						outputFolder.mkdir();
+  					}
+  
+  					String command = "mv " + getBaseStagingDir() + "/" + file + " " + getBaseOutputDir();
+  
+  					Process p = Runtime.getRuntime().exec(command);
+  					p.waitFor();
+  				}
+  			}
+  
+  		} catch (IOException e) {
+  			//e.printStackTrace();
+  			return;
+  		} catch (InterruptedException intException) {
+  			//intException.printStackTrace();
+  			return;
+  		}
 	}
 
 	logger.info("Done moving media from staging to output");

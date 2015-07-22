@@ -1,7 +1,21 @@
 /*
- * Jirecon, the Jitsi recorder container.
- * 
- * Distributable under LGPL license. See terms of license at gnu.org.
+/*
+ * Jirecon, the JItsi REcording COntainer.
+ *
+ *
+ * Copyright @ 2015 Atlassian Pty Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.jitsi.jirecon;
 
@@ -16,6 +30,8 @@ import org.jitsi.jirecon.*;
 import org.jitsi.jirecon.TaskEvent.*;
 import org.jitsi.jirecon.TaskManagerEvent.*;
 import org.jitsi.jirecon.utils.*;
+import org.jitsi.jirecon.xmppcomponent.ComponentLauncher;
+import org.jitsi.jirecon.xmppcomponent.XMPPComponent;
 import org.jitsi.service.configuration.*;
 import org.jitsi.service.libjitsi.*;
 import org.jitsi.service.neomedia.*;
@@ -40,7 +56,7 @@ public class Task
     /**
      * The <tt>Logger</tt>, used to log messages to standard output.
      */
-    private static final Logger logger = Logger
+    private static final net.java.sip.communicator.util.Logger logger = net.java.sip.communicator.util.Logger
         .getLogger(Task.class.getName());
     
     /**
@@ -295,7 +311,11 @@ public class Task
                                          TaskManagerEvent.Type.TASK_ABORTED));
                 return;
             }
-            logger.info("ICE connection established (" + info.getMucJid() + ")");
+            //logger.info("ICE connection established (" + info.getMucJid() + ")");
+            
+            
+            logger.audit("RTCServer:" +ComponentLauncher.host+", MucID:"
+    			+info.getMucJid() + ", RoutingID :" +XMPPComponent.getRoutingId()+", Message:"+"ICE connection established (" + info.getMucJid() + ")");
 
             /*
              * 5.1 Prepare for recording. Once transport manager has selected
@@ -382,8 +402,10 @@ public class Task
     @Override
     public void handleTaskEvent(TaskEvent event)
     {
-        logger.info("JireconTask event: " + event.getType());
-
+        //logger.info("JireconTask event: " + event.getType());
+        
+       logger.audit( "RTCServer:" +ComponentLauncher.host+", MucID:"
+		+XMPPComponent.getRoomName() + ", RoutingID :"+ XMPPComponent.getRoutingId()+", Message:"+"JireconTask event: " + event.getType());
         if (event.getType() == TaskEvent.Type.PARTICIPANT_CAME)
         {
             List<EndpointInfo> endpoints =
