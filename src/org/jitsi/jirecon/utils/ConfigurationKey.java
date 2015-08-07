@@ -69,7 +69,7 @@ public class ConfigurationKey
     /**
      * The directory name indicates where to output recording files.
      */
-    public final static String SAVING_DIR_KEY = PREFIX + ".OUTPUT_DIR";
+    public final static String SAVING_DIR_KEY = PREFIX + ".RECORDING_DIR";
 
     /**
      * <tt>Jirecon</tt> needs multiple ports for transfering media stream, this

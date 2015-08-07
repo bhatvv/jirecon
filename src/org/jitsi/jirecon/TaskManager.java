@@ -28,6 +28,7 @@ import java.util.*;
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.util.Logger;
+import net.sf.fmj.media.SleepHelper;
 
 import org.jitsi.impl.neomedia.recording.RecorderEventHandlerJSONImpl;
 import org.jitsi.jirecon.TaskManagerEvent.*;
@@ -85,15 +86,40 @@ public class TaskManager
     private String baseStagingDir;
 
     /**
-     * The base output directory to save the output file after staging is completed.
+     * The base output directory to save the recorded file after staging is completed.
      */
-    private String baseOutputDir;
+    private String baseRecordingDir;
     
-    private static String finalOutputDir;
+    /**
+     * The fully qualified output directory to save the recording.
+     */
+    
+    private static String finalRecordingDir;
+    
+    /**
+     * Gets the base staging directory.
+     */
 
-	public static String getFinalOutputDir() {
-		return finalOutputDir;
+    public String getBaseStagingDir() {
+    	return baseStagingDir;
+    }
+
+    /**
+     * Gets the base recording directory.
+     */
+
+    public String getbaseRecordingDir() {
+    	return baseRecordingDir;
+    }
+ 
+    /**
+     * Gets the final recorded directory.
+     */
+
+	public static String getfinalRecordingDir() {
+		return finalRecordingDir;
 	}
+	
 
     /**
      * Indicates whether <tt>JireconImpl</tt> has been initialized, it is used
@@ -149,16 +175,16 @@ public class TaskManager
 					baseStagingDir.length() - 1);
 		}
         // Remove the suffix '/' in SAVE_DIR
-		baseOutputDir = cfg.getString(ConfigurationKey.SAVING_DIR_KEY);
-		if (StringUtils.isNullOrEmpty(baseOutputDir)) {
+		baseRecordingDir = cfg.getString(ConfigurationKey.SAVING_DIR_KEY);
+		if (StringUtils.isNullOrEmpty(baseRecordingDir)) {
 			throw new Exception("Failed to initialize Jirecon: output "
 					+ "directory not set.");
 		}
 
 
-		if (baseOutputDir.endsWith("/")) {
-			baseOutputDir = baseOutputDir.substring(0,
-					baseOutputDir.length() - 1);
+		if (baseRecordingDir.endsWith("/")) {
+			baseRecordingDir = baseRecordingDir.substring(0,
+					baseRecordingDir.length() - 1);
 		}
 
         final String xmppHost = cfg.getString(ConfigurationKey.XMPP_HOST_KEY);
@@ -244,7 +270,7 @@ public class TaskManager
             baseStagingDir + "/" + mucJid
                 + new SimpleDateFormat("-yyMMdd-HHmmss").format(new Date());
 
-		finalOutputDir = outputDir;
+		finalRecordingDir = outputDir;
 
         task.addEventListener(this);
         task.init(mucJid, connection, outputDir);
@@ -293,7 +319,7 @@ public class TaskManager
 	public void createEndpointMappingJson() {
 		HashMap<String, String> hm = new HashMap<String, String>();
 		hm = RecorderEventHandlerJSONImpl.getEndpointMapping();
-		String outDir = getFinalOutputDir();
+		String outDir = getfinalRecordingDir();
 		 
 
 		JSONArray endpoints = new JSONArray();
@@ -506,7 +532,7 @@ public class TaskManager
             
             fireEvent(evt);
             createEndpointMappingJson();
-            moveOutput(baseStagingDir,baseOutputDir, mucJid);
+            moveRecord(baseStagingDir,baseRecordingDir, mucJid);
             break;
         case TASK_STARTED:
       /*      logger.info("Recording task of MUC " + mucJid + " started.");*/
@@ -535,10 +561,10 @@ public class TaskManager
         }
     }
 
-    public void moveOutput(String stagingPath, String outputPath, String mucJid) 
+    public void moveRecord(String stagingPath, String recordingPath, String mucJid) 
     {
 	   File stagingFolder = new File(stagingPath);
-	   File outputFolder = new File(outputPath);
+	   File recordingFolder = new File(recordingPath);
   
   	// make sure source exists
   	if (!stagingFolder.exists()) {
@@ -553,11 +579,11 @@ public class TaskManager
   
   			for (String file : files) {
   				if (file.matches(mucJid + ".*")) {
-  					if (!outputFolder.exists()) {
-  						outputFolder.mkdir();
+  					if (!recordingFolder.exists()) {
+  						recordingFolder.mkdir();
   					}
   
-  					String command = "mv " + getBaseStagingDir() + "/" + file + " " + getBaseOutputDir();
+  					String command = "mv " + getBaseStagingDir() + "/" + file + " " + getbaseRecordingDir();
   
   					Process p = Runtime.getRuntime().exec(command);
   					p.waitFor();
@@ -573,14 +599,8 @@ public class TaskManager
   		}
 	}
 
-	logger.info("Done moving media from staging to output");
+	logger.info("Record folder moved from staging directory to recording directory.");
     }
 
-    public String getBaseStagingDir() {
-	return baseStagingDir;
-    }
-
-    public String getBaseOutputDir() {
-	return baseOutputDir;
-    }
+   
 }
