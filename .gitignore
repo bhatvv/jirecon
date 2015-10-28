@@ -2,5 +2,6 @@
 output
 *.swp
 classes
+log/
 jirecon.jar
 /bin/
