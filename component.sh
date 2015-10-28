@@ -38,4 +38,6 @@ libs="$SCRIPT_DIR/lib/native/$architecture"
 mainClass="org.jitsi.jirecon.xmppcomponent.ComponentLauncher"
 cp=$(JARS=($SCRIPT_DIR/jirecon.jar $SCRIPT_DIR/lib/*.jar); IFS=:; echo "${JARS[*]}")
 
+logging_config="$SCRIPT_DIR/lib/logging.properties"
+
 LD_LIBRARY_PATH=$libs java -Djava.library.path=$libs -Djava.util.logging.config.file=$logging_config -cp $cp $mainClass $@
